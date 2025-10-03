@@ -1,9 +1,9 @@
 /*
-Covid 19 Data Exploration 
-
-Skills used: Joins, CTE's, Temp Tables, Windows Functions, Aggregate Functions, Creating Views, Converting Data Types
-
+Covid-19 Data Exploration 
+SQL queries analyzing global COVID-19 infection, mortality, and vaccination data.
 */
+
+-- Select all Covid-19 death records with continent information
 
 Select *
 From PortfolioProject..CovidDeaths
@@ -11,7 +11,7 @@ Where continent is not null
 order by 3,4
 
 
--- Select data to start with
+-- Select key fields to start the analysis
 
 Select Location, date, total_cases, new_cases, total_deaths, population
 From PortfolioProject..CovidDeaths
@@ -19,8 +19,7 @@ Where continent is not null
 order by 1,2
 
 
--- Total Cases vs Total Deaths
--- Shows the likelihood of dying if you contract covid in your country
+-- Calculate death percentage per country to assess mortality risk
 
 Select Location, date, total_cases,total_deaths, (total_deaths/total_cases)*100 as DeathPercentage
 From PortfolioProject..CovidDeaths
@@ -29,8 +28,7 @@ and continent is not null
 order by 1,2
 
 
--- Total Cases vs Population
--- Shows what percentage of the population is infected with covid
+-- Calculate the percentage of population infected per country
 
 Select Location, date, Population, total_cases,  (total_cases/population)*100 as PercentPopulationInfected
 From PortfolioProject..CovidDeaths
@@ -38,7 +36,7 @@ From PortfolioProject..CovidDeaths
 order by 1,2
 
 
--- Countries with the highest infection rate compared to their population
+-- Find countries with the highest infection rate relative to their population
 
 Select Location, Population, MAX(total_cases) as HighestInfectionCount,  Max((total_cases/population))*100 as PercentPopulationInfected
 From PortfolioProject..CovidDeaths
@@ -47,7 +45,7 @@ Group by Location, Population
 order by PercentPopulationInfected desc
 
 
--- Countries with the highest death count per population
+-- Find countries with the highest death count per population
 
 Select Location, MAX(cast(Total_deaths as int)) as TotalDeathCount
 From PortfolioProject..CovidDeaths
@@ -56,9 +54,6 @@ Where continent is not null
 Group by Location
 order by TotalDeathCount desc
 
-
-
--- BROKEN DOWN BY CONTINENT
 
 -- Showing continents with the highest death count per population
 
@@ -70,8 +65,7 @@ Group by continent
 order by TotalDeathCount desc
 
 
-
--- GLOBAL NUMBERS
+-- Global numbers: total cases, total deaths, and global death percentage
 
 Select SUM(new_cases) as total_cases, SUM(cast(new_deaths as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(New_Cases)*100 as DeathPercentage
 From PortfolioProject..CovidDeaths
@@ -81,9 +75,7 @@ where continent is not null
 order by 1,2
 
 
-
--- Total Population vs Vaccinations
--- Shows percentage of population that has received at least one covid vaccine
+-- Analyze vaccination progress: rolling count of vaccinated individuals by country
 
 Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
 , SUM(CONVERT(int,vac.new_vaccinations)) OVER (Partition by dea.Location Order by dea.location, dea.Date) as RollingPeopleVaccinated
@@ -96,7 +88,7 @@ where dea.continent is not null
 order by 2,3
 
 
--- Using CTE to perform Calculation on Partition By in previous query
+-- Using CTE to calculate percentage of population vaccinated
 
 With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated)
 as
@@ -115,8 +107,7 @@ Select *, (RollingPeopleVaccinated/Population)*100
 From PopvsVac
 
 
-
--- Using Temp Table to perform Calculation on Partition By in previous query
+-- Using temporary table to calculate percentage of population vaccinated
 
 DROP Table if exists #PercentPopulationVaccinated
 Create Table #PercentPopulationVaccinated
@@ -144,9 +135,7 @@ Select *, (RollingPeopleVaccinated/Population)*100
 From #PercentPopulationVaccinated
 
 
-
-
--- Creating View to store data for later visualizations
+-- Create a view for downstream visualization
 
 Create View PercentPopulationVaccinated as
 Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
